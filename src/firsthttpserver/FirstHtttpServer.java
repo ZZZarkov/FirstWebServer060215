@@ -4,10 +4,13 @@ import com.sun.net.httpserver.Headers;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import java.io.BufferedInputStream;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +32,7 @@ public class FirstHtttpServer
         HttpServer server = HttpServer.create(new InetSocketAddress(ip, port), 0);
         server.createContext("/welcome", new RequestHandler());
         server.createContext("/headers", new HeadersHandler());
+        server.createContext("/pages/", new RequestHandler3());
         server.setExecutor(null); // Use the default executor
         server.start();
         System.out.println("Server started, listening on port: " + port);
@@ -57,7 +61,7 @@ public class FirstHtttpServer
             he.sendResponseHeaders(200, response.length());
             try (PrintWriter pw = new PrintWriter(he.getResponseBody()))
             {
-                pw.print(response); //What happens if we use a println instead of print --> Explain
+                pw.print(response); //What happens if we use a println instead of print --> Siden bliver ved med at indlæse, uden at skrive noget på siden...
             }
         }
     }
@@ -101,6 +105,29 @@ public class FirstHtttpServer
             try (PrintWriter pw = new PrintWriter(he.getResponseBody()))
             {
                 pw.print(response);
+            }
+        }
+    }
+    
+    static class RequestHandler3 implements HttpHandler
+    {
+        @Override
+        public void handle(HttpExchange he) throws IOException
+        {
+            String contentFolder = "public/";
+            File file = new File(contentFolder + "html.html");
+            byte[] bytesToSend = new byte[(int) file.length()];
+            try
+            {
+                BufferedInputStream bis = new BufferedInputStream(new FileInputStream(file));
+                bis.read(bytesToSend, 0, bytesToSend.length);
+            } catch (IOException ie) {
+                ie.printStackTrace();
+            }
+            he.sendResponseHeaders(200, bytesToSend.length);
+            try (OutputStream os = he.getResponseBody())
+            {
+                os.write(bytesToSend, 0, bytesToSend.length);
             }
         }
     }
